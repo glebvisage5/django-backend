@@ -1,0 +1,749 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>EduCRM — Задачи</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <style>
+    :root {
+      --background: 0 0% 100%;
+      --foreground: 222.2 84% 4.9%;
+      --card: 0 0% 100%;
+      --card-foreground: 222.2 84% 4.9%;
+      --muted: 210 40% 96.1%;
+      --muted-foreground: 215.4 16.3% 46.9%;
+      --border: 214.3 31.8% 91.4%;
+      --radius: 0.75rem;
+    }
+
+    body {
+      background-color: hsl(var(--background));
+      color: hsl(var(--foreground));
+      font-family: system-ui, sans-serif;
+    }
+
+    .card {
+      border-radius: var(--radius);
+      border: 1px solid hsl(var(--border));
+      background-color: hsl(var(--card));
+      box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+    }
+    .card-header { padding: 1rem 1.25rem; border-bottom: 1px solid hsl(var(--border)); }
+    .card-content { padding: 1rem 1.25rem; }
+
+    .btn-outline {
+      border: 1px solid hsl(var(--border));
+      padding: 0.5rem 1rem;
+      border-radius: var(--radius);
+      background: transparent;
+      transition: background 0.15s ease;
+    }
+    .btn-outline:hover { background: hsl(var(--muted)); }
+
+    .sidebar-link {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.55rem 0.9rem;
+      border-radius: 0.6rem;
+      font-size: 0.9rem;
+      color: hsl(var(--muted-foreground));
+      cursor: pointer;
+      transition: background 0.15s ease, color 0.15s ease;
+    }
+    .sidebar-link:hover {
+      background-color: hsl(var(--muted));
+      color: hsl(var(--foreground));
+    }
+    .sidebar-link-active {
+      background-color: hsl(var(--muted));
+      color: hsl(var(--foreground));
+      font-weight: 500;
+    }
+  </style>
+</head>
+
+<body class="bg-gray-50">
+
+<div class="min-h-screen flex">
+
+  <aside class="w-64 bg-card border-r flex flex-col">
+    <div class="px-5 py-4 border-b">
+      <div class="flex items-center gap-2">
+        <div class="w-8 h-8 rounded-xl bg-indigo-600 flex items-center justify-center text-white font-semibold">
+          E
+        </div>
+        <div>
+          <div class="text-sm font-semibold">EduCRM</div>
+          <div id="panel-title" class="text-xs text-muted-foreground">Панель студента</div>
+        </div>
+      </div>
+      <div class="mt-2 text-xs text-muted-foreground">
+        Режим: <span id="panel-mode">Пользователь</span>
+      </div>
+    </div>
+
+    <nav class="flex-1 px-3 py-4 space-y-1" id="sidebar-menu">
+      <!-- JS вставит пункты меню -->
+    </nav>
+
+    <div class="px-3 py-3 border-t">
+      <button class="sidebar-link w-full justify-start" id="logout-btn">
+        <i data-lucide="log-out" class="w-4 h-4"></i>
+        <span>Выйти</span>
+      </button>
+    </div>
+  </aside>
+
+  <main class="flex-1 bg-gray-50">
+    <header class="border-b bg-card">
+      <div class="max-w-[1800px] mx-auto px-4 py-3 flex items-center justify-between">
+        <div>
+          <h1 class="text-lg font-semibold">Задачи</h1>
+          <p class="text-xs text-muted-foreground">Управляйте и отслеживайте ваши задания</p>
+        </div>
+        <div class="flex items-center gap-3 text-sm">
+          <span id="user-name" class="font-medium">Пользователь</span>
+          <span class="px-2 py-1 rounded-full bg-muted text-xs text-muted-foreground" id="user-role-label">
+            Студент
+          </span>
+        </div>
+      </div>
+    </header>
+
+    <section class="space-y-4 md:space-y-6 max-w-[1800px] mx-auto px-4 py-6" id="tasks-root">
+<div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+  <div class="text-center sm:text-left w-full sm:w-auto">
+    <h2 class="text-xl sm:text-2xl">Прогресс задач</h2>
+    <p class="text-muted-foreground text-sm sm:text-base">Управляйте и отслеживайте ваши задания</p>
+  </div>
+
+  <button class="flex items-center justify-center gap-2 bg-indigo-600 text-white px-4 py-2 rounded-lg w-full sm:w-auto hover:bg-indigo-700 transition">
+    <i data-lucide="plus" class="h-4 w-4"></i>
+    Новая задача
+  </button>
+</div>
+
+
+<div class="grid gap-4 md:grid-cols-4" id="tasks-stats"></div>
+
+
+<div class="card">
+  <div class="card-content pt-6">
+    <div class="flex flex-col sm:flex-row gap-4">
+      <div class="relative flex-1">
+        <i data-lucide="search" class="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground"></i>
+        <input
+          id="task-search"
+          type="text"
+          placeholder="Поиск задач..."
+          class="w-full pl-9 pr-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+        />
+      </div>
+
+      <select
+        id="filter-status"
+        class="w-full sm:w-[180px] border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+      >
+        <option value="all">Все статусы</option>
+        <option value="completed">Завершено</option>
+        <option value="in-progress">В процессе</option>
+        <option value="pending">Ожидает</option>
+      </select>
+
+      <select
+        id="filter-priority"
+        class="w-full sm:w-[180px] border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+      >
+        <option value="all">Все приоритеты</option>
+        <option value="high">Высокий</option>
+        <option value="medium">Средний</option>
+        <option value="low">Низкий</option>
+      </select>
+
+    </div>
+  </div>
+</div>
+
+<div class="grid gap-4 md:grid-cols-2 lg:grid-cols-3" id="tasks-grid"></div>
+
+<div id="task-modal" class="fixed inset-0 bg-black/40 backdrop-blur-sm hidden items-center justify-center z-50">
+  <div class="bg-white rounded-xl shadow-xl w-full max-w-3xl max-h-[90vh] overflow-y-auto p-6 relative">
+
+    <button id="task-modal-close" class="absolute top-4 right-4 text-gray-500 hover:text-black">
+      <i data-lucide="x" class="w-6 h-6"></i>
+    </button>
+
+    <div id="task-modal-header" class="mb-4"></div>
+
+    <div>
+      <div class="grid grid-cols-3 border rounded-lg overflow-hidden text-sm font-medium">
+        <button data-tab="details" class="task-tab-btn py-2 bg-muted">Детали</button>
+        <button data-tab="attachments" class="task-tab-btn py-2">Вложения</button>
+        <button data-tab="comments" class="task-tab-btn py-2">Комментарии</button>
+      </div>
+
+      <div class="mt-4">
+        <div id="tab-details" class="task-tab-content space-y-6">
+          <div>
+            <h4 class="mb-2 font-medium">Описание</h4>
+            <p id="task-desc" class="text-muted-foreground"></p>
+          </div>
+
+          <div class="grid gap-4 md:grid-cols-2">
+            <div class="card">
+              <div class="card-content pt-6">
+                <div class="flex items-center gap-3">
+                  <i data-lucide="calendar" class="h-5 w-5 text-muted-foreground"></i>
+                  <div>
+                    <p class="text-sm text-muted-foreground">Срок сдачи</p>
+                    <p id="task-due"></p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="card">
+              <div class="card-content pt-6">
+                <div class="flex items-center gap-3">
+                  <i id="task-status-icon" class="h-5 w-5"></i>
+                  <div>
+                    <p class="text-sm text-muted-foreground">Статус</p>
+                    <p id="task-status-text" class="capitalize"></p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+          </div>
+          <div>
+            <h4 class="mb-2 font-medium">Прогресс</h4>
+
+            <div class="space-y-2">
+              <div class="flex justify-between text-sm">
+                <span id="task-progress-complete"></span>
+                <span id="task-progress-remaining"></span>
+              </div>
+              <div class="w-full bg-muted rounded-full h-2">
+                <div id="task-progress-bar" class="bg-indigo-600 h-2 rounded-full" style="width: 0%"></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="flex gap-2">
+            <button id="task-update-progress" class="flex-1 bg-indigo-600 text-white py-2 rounded-lg hover:bg-indigo-700 transition">
+              Обновить прогресс
+            </button>
+
+            <button id="task-mark-complete" class="flex-1 border py-2 rounded-lg hover:bg-muted transition">
+              Отметить как выполненное
+            </button>
+          </div>
+
+        </div>
+
+        <div id="tab-attachments" class="task-tab-content hidden space-y-4">
+          <div id="task-attachments-list"></div>
+          <button id="task-upload-btn" class="w-full border py-2 rounded-lg flex items-center justify-center gap-2 hover:bg-muted transition">
+            <i data-lucide="upload" class="h-4 w-4"></i>
+            Загрузить файл
+          </button>
+          <input type="file" id="task-upload-input" class="hidden" />
+        </div>
+
+        <div id="tab-comments" class="task-tab-content hidden space-y-4">
+          <div id="task-comments-list"></div>
+          <div class="space-y-2">
+            <textarea id="task-comment-input" rows="3" placeholder="Добавить комментарий..." class="w-full border rounded-lg p-2"></textarea>
+            <button id="task-comment-submit" class="w-full bg-indigo-600 text-white py-2 rounded-lg hover:bg-indigo-700 transition flex items-center justify-center gap-2">
+              <i data-lucide="message-square" class="h-4 w-4"></i>
+              Опубликовать
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+  initPage();
+});
+
+let TASKS = [];
+let CURRENT_TASK = null;
+
+// INIT PAGE
+async function initPage() {
+  await loadUserInfo();
+  await loadTasks();
+  initLogout();
+  lucide.createIcons();
+}
+
+// USER INFO + MENU
+async function loadUserInfo() {
+  const token = localStorage.getItem("token");
+
+  const response = await fetch("/api/auth/me/", {
+    headers: { "Authorization": `Bearer ${token}` }
+  });
+
+  const user = await response.json();
+  const isAdmin = !!user.is_admin;
+
+  document.getElementById("user-name").textContent = user.name || user.email;
+  document.getElementById("user-role-label").textContent = isAdmin ? "Администратор" : "Студент";
+  document.getElementById("panel-title").textContent = isAdmin ? "Панель администратора" : "Панель студента";
+  document.getElementById("panel-mode").textContent = isAdmin ? "Админ" : "Пользователь";
+
+  renderSidebarMenu(isAdmin);
+}
+
+function renderSidebarMenu(isAdmin) {
+  const menu = document.getElementById("sidebar-menu");
+  menu.innerHTML = "";
+
+  const studentItems = [
+    { icon: "layout-dashboard", label: "Дашборд", href: "/educrm/" },
+    { icon: "check-square", label: "Задачи", href: "/tasks/", active: true },
+    { icon: "book-open", label: "Курсы" },
+    { icon: "users", label: "Группа" },
+    { icon: "users-2", label: "Команда" },
+    { icon: "folder", label: "Файлы" },
+    { icon: "user", label: "Профиль" },
+    { icon: "settings", label: "Настройки" },
+  ];
+
+  const adminItems = [
+    { icon: "layout-dashboard", label: "Дашборд", href: "/" },
+    { icon: "users", label: "Пользователи" },
+    { icon: "users-2", label: "Группы" },
+    { icon: "book-open", label: "Курсы" },
+    { icon: "folder", label: "Файлы" },
+    { icon: "settings", label: "Настройки" },
+  ];
+
+  const items = isAdmin ? adminItems : studentItems;
+
+  items.forEach(item => {
+    const div = document.createElement("a");
+    div.href = item.href || "#";
+    div.className = "sidebar-link" + (item.active ? " sidebar-link-active" : "");
+    div.innerHTML = `
+      <i data-lucide="${item.icon}" class="w-4 h-4"></i>
+      <span>${item.label}</span>
+    `;
+    menu.appendChild(div);
+  }); 
+  lucide.createIcons();
+}
+
+// LOGOUT
+function initLogout() {
+  document.getElementById("logout-btn").addEventListener("click", () => {
+    localStorage.removeItem("token");
+    window.location.href = "/";
+  });
+}
+
+// LOAD TASKS
+async function loadTasks() {
+  const token = localStorage.getItem("token");
+
+  const response = await fetch("/api/educrm/tasks/", {
+    headers: { "Authorization": `Bearer ${token}` }
+  });
+
+  const data = await response.json();
+  TASKS = data.tasks || [];
+
+  renderStats();
+  renderTasksGrid();
+  initFilters();
+}
+
+// STATS
+function renderStats() {
+  const stats = {
+    total: TASKS.length,
+    completed: TASKS.filter(t => t.status === "completed").length,
+    inProgress: TASKS.filter(t => t.status === "in-progress").length,
+    pending: TASKS.filter(t => t.status === "pending").length,
+  };
+
+  document.getElementById("tasks-stats").innerHTML = `
+    ${statCard("Всего задач", stats.total, "file-text")}
+    ${statCard("Завершено", stats.completed, "check-circle", "text-green-600")}
+    ${statCard("В процессе", stats.inProgress, "clock", "text-blue-600")}
+    ${statCard("Ожидает", stats.pending, "alert-circle", "text-yellow-600")}
+  `;
+
+  lucide.createIcons();
+}
+
+function statCard(label, value, icon, color = "text-muted-foreground") {
+  return `
+    <div class="card">
+      <div class="card-content pt-6">
+        <div class="flex items-center justify-between">
+          <div>
+            <p class="text-sm text-muted-foreground">${label}</p>
+            <div class="text-2xl ${color}">${value}</div>
+          </div>
+          <i data-lucide="${icon}" class="h-8 w-8 ${color}"></i>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+// FILTERS + SEARCH
+function initFilters() {
+  document.getElementById("task-search").addEventListener("input", renderTasksGrid);
+  document.getElementById("filter-status").addEventListener("change", renderTasksGrid);
+  document.getElementById("filter-priority").addEventListener("change", renderTasksGrid);
+}
+
+function getFilteredTasks() {
+  const search = document.getElementById("task-search").value.toLowerCase();
+  const status = document.getElementById("filter-status").value;
+  const priority = document.getElementById("filter-priority").value;
+
+  return TASKS.filter(t => {
+    const matchesSearch =
+      t.title.toLowerCase().includes(search) ||
+      t.course.toLowerCase().includes(search);
+
+    const matchesStatus = status === "all" || t.status === status;
+    const matchesPriority = priority === "all" || t.priority === priority;
+
+    return matchesSearch && matchesStatus && matchesPriority;
+  });
+}
+
+// TASK CARDS
+function renderTasksGrid() {
+  const tasks = getFilteredTasks();
+  const grid = document.getElementById("tasks-grid");
+  grid.innerHTML = "";
+
+  tasks.forEach(task => {
+    const card = document.createElement("div");
+    card.className = "card hover:shadow-lg transition cursor-pointer";
+    card.innerHTML = `
+      <div class="card-header">
+        <div class="flex items-start justify-between gap-2">
+          <div class="flex-1 min-w-0">
+            <h3 class="text-base mb-2 line-clamp-2">${task.title}</h3>
+            <p class="text-sm text-muted-foreground truncate">${task.course}</p>
+          </div>
+          <span class="px-2 py-1 rounded text-xs ${statusColor(task.status)}">
+            ${statusLabel(task.status)}
+          </span>
+        </div>
+      </div>
+
+      <div class="card-content space-y-3">
+        <span class="px-2 py-1 rounded text-xs ${priorityColor(task.priority)}">
+          ${priorityLabel(task.priority)}
+        </span>
+
+        <div class="space-y-2">
+          <div class="flex items-center justify-between text-sm">
+            <span class="text-muted-foreground">Прогресс</span>
+            <span>${task.progress}%</span>
+          </div>
+          <div class="w-full bg-muted rounded-full h-2">
+            <div class="bg-indigo-600 h-2 rounded-full" style="width:${task.progress}%"></div>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-2 text-sm text-muted-foreground">
+          <i data-lucide="calendar" class="h-4 w-4"></i>
+          <span>Срок: ${task.dueDate}</span>
+        </div>
+      </div>
+    `;
+
+    card.addEventListener("click", () => openTaskModal(task.id));
+    grid.appendChild(card);
+  });
+
+  lucide.createIcons();
+}
+
+// MODAL
+async function openTaskModal(id) {
+  const token = localStorage.getItem("token");
+
+  const response = await fetch(`/api/educrm/tasks/${id}/`, {
+    headers: { "Authorization": `Bearer ${token}` }
+  });
+
+  CURRENT_TASK = await response.json();
+
+  fillTaskModal();
+  document.getElementById("task-modal").classList.remove("hidden");
+  lucide.createIcons();
+}
+
+document.getElementById("task-modal-close").addEventListener("click", () => {
+  document.getElementById("task-modal").classList.add("hidden");
+});
+
+// MODAL CONTENT
+function fillTaskModal() {
+  const t = CURRENT_TASK;
+
+  // HEADER
+  document.getElementById("task-modal-header").innerHTML = `
+    <div class="flex items-start justify-between gap-4">
+      <div class="flex-1">
+        <h2 class="text-xl font-semibold">${t.title}</h2>
+        <p class="text-muted-foreground">${t.course}</p>
+      </div>
+      <div class="flex gap-2 shrink-0">
+        <span class="px-2 py-1 rounded text-xs ${statusColor(t.status)}">${statusLabel(t.status)}</span>
+        <span class="px-2 py-1 rounded text-xs ${priorityColor(t.priority)}">${priorityLabel(t.priority)}</span>
+      </div>
+    </div>
+  `;
+
+  // DETAILS
+  document.getElementById("task-desc").textContent = t.description;
+  document.getElementById("task-due").textContent = t.dueDate;
+  document.getElementById("task-status-text").textContent = statusLabel(t.status);
+
+  document.getElementById("task-status-icon").setAttribute("data-lucide", statusIcon(t.status));
+
+  document.getElementById("task-progress-complete").textContent = `${t.progress}% выполнено`;
+  document.getElementById("task-progress-remaining").textContent = `${100 - t.progress}% осталось`;
+  document.getElementById("task-progress-bar").style.width = `${t.progress}%`;
+
+  // ATTACHMENTS
+  renderAttachments();
+
+  // COMMENTS
+  renderComments();
+
+  // TAB SWITCHING
+  initTabs();
+
+  // ACTION BUTTONS
+  document.getElementById("task-update-progress").onclick = updateProgress;
+  document.getElementById("task-mark-complete").onclick = markComplete;
+  document.getElementById("task-upload-btn").onclick = () => document.getElementById("task-upload-input").click();
+  document.getElementById("task-upload-input").onchange = uploadFile;
+  document.getElementById("task-comment-submit").onclick = submitComment;
+}
+
+// TABS
+function initTabs() {
+  document.querySelectorAll(".task-tab-btn").forEach(btn => {
+    btn.onclick = () => {
+      document.querySelectorAll(".task-tab-btn").forEach(b => b.classList.remove("bg-muted"));
+      btn.classList.add("bg-muted");
+
+      const tab = btn.dataset.tab;
+      document.querySelectorAll(".task-tab-content").forEach(c => c.classList.add("hidden"));
+      document.getElementById(`tab-${tab}`).classList.remove("hidden");
+    };
+  });
+}
+
+// ATTACHMENTS
+function renderAttachments() {
+  const list = document.getElementById("task-attachments-list");
+  list.innerHTML = "";
+
+  if (CURRENT_TASK.attachments.length === 0) {
+    list.innerHTML = `
+      <div class="card">
+        <div class="card-content pt-6 text-center">
+          <i data-lucide="file-text" class="h-12 w-12 text-muted-foreground mx-auto mb-4"></i>
+          <p class="text-muted-foreground mb-4">Пока нет вложений</p>
+        </div>
+      </div>
+    `;
+    return;
+  }
+
+  CURRENT_TASK.attachments.forEach(file => {
+    list.innerHTML += `
+      <div class="card">
+        <div class="card-content pt-6 flex items-center justify-between">
+          <div class="flex items-center gap-3">
+            <i data-lucide="file-text" class="h-5 w-5 text-muted-foreground"></i>
+            <span>${file}</span>
+          </div>
+          <a href="/api/educrm/tasks/${CURRENT_TASK.id}/download/${file}" class="btn-outline px-3 py-1 text-sm">
+            Скачать
+          </a>
+        </div>
+      </div>
+    `;
+  });
+}
+
+// COMMENTS
+function renderComments() {
+  const list = document.getElementById("task-comments-list");
+  list.innerHTML = "";
+
+  if (CURRENT_TASK.comments.length === 0) {
+    list.innerHTML = `
+      <div class="card">
+        <div class="card-content pt-6 text-center">
+          <i data-lucide="message-square" class="h-12 w-12 text-muted-foreground mx-auto mb-4"></i>
+          <p class="text-muted-foreground mb-4">Пока нет комментариев</p>
+        </div>
+      </div>
+    `;
+    return;
+  }
+
+  CURRENT_TASK.comments.forEach(c => {
+    list.innerHTML += `
+      <div class="card">
+        <div class="card-content pt-6">
+          <div class="flex items-start gap-3">
+            <div class="w-8 h-8 bg-indigo-600 text-white rounded-full flex items-center justify-center text-sm">
+              ${c.author.charAt(0)}
+            </div>
+            <div class="flex-1">
+              <div class="flex items-center gap-2 mb-1">
+                <span>${c.author}</span>
+                <span class="text-xs text-muted-foreground">${c.time}</span>
+              </div>
+              <p class="text-sm text-muted-foreground">${c.text}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+  });
+}
+
+// ACTIONS
+async function updateProgress() {
+  const newProgress = prompt("Введите новый прогресс (0–100):", CURRENT_TASK.progress);
+  if (newProgress === null) return;
+
+  const token = localStorage.getItem("token");
+
+  const response = await fetch(`/api/educrm/tasks/${CURRENT_TASK.id}/progress/`, {
+    method: "PATCH",
+    headers: {
+      "Authorization": `Bearer ${token}`,
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({ progress: Number(newProgress) })
+  });
+
+  CURRENT_TASK = await response.json();
+  fillTaskModal();
+  await loadTasks();
+}
+
+async function markComplete() {
+  const token = localStorage.getItem("token");
+
+  const response = await fetch(`/api/educrm/tasks/${CURRENT_TASK.id}/complete/`, {
+    method: "PATCH",
+    headers: { "Authorization": `Bearer ${token}` }
+  });
+
+  CURRENT_TASK = await response.json();
+  fillTaskModal();
+  await loadTasks();
+}
+
+async function uploadFile() {
+  const fileInput = document.getElementById("task-upload-input");
+  const file = fileInput.files[0];
+  if (!file) return;
+
+  const formData = new FormData();
+  formData.append("file", file);
+
+  const token = localStorage.getItem("token");
+
+  await fetch(`/api/educrm/tasks/${CURRENT_TASK.id}/upload/`, {
+    method: "POST",
+    headers: { "Authorization": `Bearer ${token}` },
+    body: formData
+  });
+
+  await openTaskModal(CURRENT_TASK.id);
+  await loadTasks();
+}
+
+async function submitComment() {
+  const text = document.getElementById("task-comment-input").value.trim();
+  if (!text) return;
+
+  const token = localStorage.getItem("token");
+
+  await fetch(`/api/educrm/tasks/${CURRENT_TASK.id}/comment/`, {
+    method: "POST",
+    headers: {
+      "Authorization": `Bearer ${token}`,
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({ text })
+  });
+
+  document.getElementById("task-comment-input").value = "";
+  await openTaskModal(CURRENT_TASK.id);
+  await loadTasks();
+}
+
+// HELPERS
+function statusLabel(s) {
+  return {
+    "completed": "Завершено",
+    "in-progress": "В процессе",
+    "pending": "Ожидает"
+  }[s] || s;
+}
+
+function statusColor(s) {
+  return {
+    "completed": "bg-green-100 text-green-800",
+    "in-progress": "bg-blue-100 text-blue-800",
+    "pending": "bg-yellow-100 text-yellow-800"
+  }[s] || "bg-muted text-muted-foreground";
+}
+
+function statusIcon(s) {
+  return {
+    "completed": "check-circle",
+    "in-progress": "clock",
+    "pending": "alert-circle"
+  }[s] || "circle";
+}
+
+function priorityLabel(p) {
+  return {
+    "high": "Высокий приоритет",
+    "medium": "Средний приоритет",
+    "low": "Низкий приоритет"
+  }[p] || p;
+}
+
+function priorityColor(p) {
+  return {
+    "high": "bg-red-100 text-red-800",
+    "medium": "bg-orange-100 text-orange-800",
+    "low": "bg-gray-100 text-gray-800"
+  }[p] || "bg-muted text-muted-foreground";
+}
+document.addEventListener("DOMContentLoaded", () => {
+  const modal = document.getElementById("task-modal");
+  if (modal) modal.classList.add("hidden");
+});
+</script>

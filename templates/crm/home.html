@@ -2,7 +2,7 @@
 <html lang="ru">
 <head>
   <meta charset="UTF-8" />
-  <title>EduCRM — Главная</title>
+  <title>Avis</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
@@ -165,33 +165,7 @@
 
           <!-- Auth Buttons or Services Button -->
           <!-- НЕавторизованный пользователь (по умолчанию) -->
-          <button
-            type="button"
-            class="px-3 py-2 rounded-xl text-sm hover:bg-accent transition-colors font-semibold"
-            id="login-open-desktop"
-          >
-            Войти
-          </button>
-          <button
-            type="button"
-            class="gap-2 text-white shadow-lg hover:shadow-xl transition-shadow text-sm px-3 py-2 rounded-xl flex items-center justify-center font-semibold"
-            style="background: linear-gradient(135deg, #a855f7, #4f46e5, #22c55e);"
-            id="register-open-desktop"
-          >
-            <i data-lucide="sparkles" class="h-4 w-4"></i>
-            Регистрация
-          </button>
-
-          <!-- Если бы был авторизован, вместо двух кнопок:
-          <button
-            type="button"
-            class="gap-2 text-white shadow-lg hover:shadow-xl transition-shadow text-sm px-3 py-2 rounded-xl flex items-center justify-center font-semibold"
-            style="background: linear-gradient(135deg, #a855f7, #4f46e5, #22c55e);"
-          >
-            <i data-lucide="sparkles" class="h-4 w-4"></i>
-            Выбрать сервис
-          </button>
-          -->
+          <div id="auth-buttons-container"></div>
         </div>
 
         <!-- Mobile Menu Button -->
@@ -343,7 +317,8 @@
           <button
             type="button"
             class="gap-2 text-lg px-3 py-2 rounded-xl border border-[#4f46e5] text-[#4f46e5] hover:bg-[#4f46e5]/10 inline-flex items-center justify-center font-semibold"
-            onclick="document.getElementById('contact-form').scrollIntoView({behavior:'smooth', block:'start'})"
+            
+            onclick={handleClick}
           >
             Связаться
           </button>
@@ -1170,10 +1145,9 @@
 
     <!-- Register Modal -->
     <div class="modal" id="register-modal">
-        <div class="modal-backdrop" id="register-backdrop"></div>
-
-        <div class="modal-panel mx-4">
-            <div class="rounded-xl border bg-white p-6 shadow-xl relative z-50">
+      <div class="modal-backdrop" id="register-backdrop"></div>
+      <div class="modal-panel mx-4">
+        <div class="rounded-xl border bg-white p-6 shadow-xl relative z-50">
             <h3 class="text-lg font-semibold mb-1">Регистрация</h3>
             <p class="text-sm text-muted-foreground mb-4">
                 Заполните данные, чтобы создать аккаунт.
@@ -1279,9 +1253,51 @@
                 </button>
                 </div>
             </form>
+          </div>
+        </div>
+      </div>
+
+      <!-- Services Modal -->
+    <div class="modal" id="services-modal">
+      <div class="modal-backdrop" id="services-backdrop"></div>
+
+      <div class="modal-panel mx-4 max-w-xl max-h-[50vh] overflow-y-auto bg-white rounded-xl border shadow-xl p-6 relative z-50">
+        <!-- Header -->
+        <div class="text-center mb-6">
+            <div class="flex items-center justify-center gap-2 mb-2">
+                <i data-lucide="sparkles" class="w-6 h-6 text-indigo-600"></i>
+                <h2 class="text-2xl font-bold bg-gradient-to-r from-purple-600 via-indigo-600 to-green-600 bg-clip-text text-transparent">
+                    Выберите сервис
+                </h2>
+            </div>
+            <p class="text-sm text-muted-foreground">Выберите сервис для начала работы</p>
+        </div>
+
+        <!-- Services Grid -->
+        <div id="services-grid" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
+
+        <!-- Custom solution -->
+        <div class="mt-6 p-5 border-2 rounded-xl bg-muted/30">
+            <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-3">
+                <div class="flex-1">
+                    <div class="flex items-center gap-2 mb-1">
+                        <i data-lucide="sparkles" class="w-4 h-4 text-indigo-600"></i>
+                        <h4 class="text-lg">Нужно индивидуальное решение?</h4>
+                    </div>
+                    <p class="text-sm text-muted-foreground">
+                        Мы создаём CRM системы по вашим индивидуальным требованиям
+                    </p>
+                </div>
+                <button 
+                    class="border-2 border-indigo-600 text-indigo-600 hover:bg-indigo-600/10 px-5 py-2 rounded-md"
+                    id="contact-us-btn"
+                >
+                    Связаться с нами
+                </button>
             </div>
         </div>
-        </div>
+      </div>
+    </div>
 
 
   <!-- Privacy / Terms / Contact модалки можно оформить аналогично -->
@@ -1408,8 +1424,12 @@
             if (data.error) {
                 alert(data.error);
             } else {
-                alert("Регистрация успешна!");
                 closeModal("register");
+                localStorage.setItem("token", data.token);
+                localStorage.setItem("is_admin", false);
+                localStorage.setItem("user_name", name);
+                renderAuthButtons();
+                openServicesModal();
                 registerForm.reset();
             }
         });
@@ -1438,8 +1458,12 @@
             if (data.error) {
                 alert(data.error);
             } else {
-                alert("Успешный вход!");
                 closeModal("login");
+                localStorage.setItem("token", data.token);
+                localStorage.setItem("is_admin", data.user.is_admin);
+                localStorage.setItem("user_name", data.user.name);
+                renderAuthButtons();
+                openServicesModal();
                 loginForm.reset();
             }
         });
@@ -1479,7 +1503,197 @@
         loop();
     });
 
+// SERVICES MODAL LOGIC
 
+function openServicesModal() {
+    document.getElementById("services-modal").classList.add("active");
+    document.getElementById("services-backdrop").classList.add("active");
+    renderServices();
+}
+
+function closeServicesModal() {
+    document.getElementById("services-modal").classList.remove("active");
+    document.getElementById("services-backdrop").classList.remove("active");
+}
+
+document.getElementById("services-backdrop").addEventListener("click", closeServicesModal);
+
+const services = [
+    {
+        id: "educrm",
+        name: "EduCRM",
+        description: "Комплексная система управления образованием",
+        icon: "graduation-cap",
+        color: "from-purple-500 via-indigo-600 to-green-500",
+        status: "active"
+    },
+    {
+        id: "analytics",
+        name: "AnalyticsPro",
+        description: "Платформа бизнес-аналитики",
+        icon: "bar-chart-3",
+        color: "from-blue-500 to-cyan-600",
+        status: "coming-soon"
+    },
+    {
+        id: "teamhub",
+        name: "TeamHub",
+        description: "Управление персоналом и командной работой",
+        icon: "users",
+        color: "from-emerald-500 to-teal-600",
+        status: "active"
+    },
+    {
+        id: "ecommerce",
+        name: "ShopFlow",
+        description: "E-commerce платформа",
+        icon: "shopping-cart",
+        color: "from-orange-500 to-red-600",
+        status: "coming-soon"
+    }
+];
+
+const adminService = {
+    id: "admin-center",
+    name: "Admin Center",
+    description: "Глобальное администрирование платформы",
+    icon: "shield",
+    color: "from-red-600 via-purple-600 to-indigo-700",
+    status: "active"
+};
+
+function renderServices() {
+    const grid = document.getElementById("services-grid");
+    grid.innerHTML = "";
+
+    const isAdmin = localStorage.getItem("is_admin") === "true";
+
+    const list = isAdmin ? [adminService, ...services] : services;
+
+    list.forEach(service => {
+        const card = document.createElement("div");
+        card.className = `
+            p-5 border-2 rounded-xl cursor-pointer transition-all
+            ${service.status === "active" 
+                ? "hover:shadow-xl hover:scale-[1.02] hover:border-indigo-500" 
+                : "opacity-60 cursor-not-allowed"}
+        `;
+
+        card.innerHTML = `
+            <div class="flex flex-col gap-4">
+                <div class="w-16 h-16 rounded-xl bg-gradient-to-br ${service.color} flex items-center justify-center text-white shadow-lg">
+                    <i data-lucide="${service.icon}" class="w-8 h-8"></i>
+                </div>
+
+                <div class="space-y-2">
+                    <div class="flex items-center justify-between">
+                        <h3 class="text-xl">${service.name}</h3>
+                        ${service.status === "coming-soon" ? 
+                            `<span class="text-xs px-2 py-1 bg-gray-200 rounded-full">Скоро</span>` 
+                            : ""}
+                    </div>
+                    <p class="text-sm text-muted-foreground">${service.description}</p>
+                </div>
+
+                ${service.status === "active" ? `
+                    <button class="w-full flex justify-between items-center px-4 py-2 rounded-md text-white shadow-lg"
+                        style="background: linear-gradient(135deg, #a855f7, #4f46e5, #22c55e);">
+                        <span>Запустить сервис</span>
+                        <i data-lucide="arrow-right" class="w-4 h-4"></i>
+                    </button>
+                ` : ""}
+            </div>
+        `;
+
+        if (service.status === "active") {
+            card.addEventListener("click", () => {
+                window.location.href = `/${service.id}/`;
+            });
+        }
+
+        grid.appendChild(card);
+    });
+
+    lucide.createIcons();
+}
+
+// AUTH BUTTONS RENDER
+
+function renderAuthButtons() {
+    const container = document.getElementById("auth-buttons-container");
+    const token = localStorage.getItem("token");
+
+    if (!token) {
+        container.innerHTML = `
+            <div class="hidden md:flex items-center gap-2 sm:gap-4 font-semibold">
+              <button
+                type="button"
+                class="px-3 py-2 rounded-xl text-sm hover:bg-accent transition-colors"
+                id="login-open-desktop"
+              >
+                Войти
+              </button>
+
+              <button
+                type="button"
+                class="gap-2 text-white shadow-lg hover:shadow-xl transition-shadow text-sm px-3 py-2 rounded-xl flex items-center justify-center"
+                style="background: linear-gradient(135deg, #a855f7, #4f46e5, #22c55e);"
+                id="register-open-desktop"
+              >
+                <i data-lucide="sparkles" class="h-4 w-4"></i>
+                Регистрация
+              </button>
+            </div>
+        `;
+
+        lucide.createIcons();
+
+        document.getElementById("login-open-desktop").addEventListener("click", () => {
+            openModal("login");
+        });
+
+        document.getElementById("register-open-desktop").addEventListener("click", () => {
+            openModal("register");
+        });
+
+        return;
+    }
+
+    container.innerHTML = `
+        <button
+          type="button"
+          id="open-services-btn"
+          class="gap-2 text-white shadow-lg hover:shadow-xl transition-shadow text-sm px-3 py-2 rounded-xl flex items-center justify-center font-semibold"
+          style="background: linear-gradient(135deg, #a855f7, #4f46e5, #22c55e);"
+        >
+          <i data-lucide="sparkles" class="h-4 w-4"></i>
+          Выбрать сервис
+        </button>
+    `;
+
+    lucide.createIcons();
+
+    document.getElementById("open-services-btn").addEventListener("click", () => {
+        openServicesModal();
+    });
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+    renderAuthButtons();
+});
+
+document.getElementById("services-open-hero").addEventListener("click", () => {
+    const token = localStorage.getItem("token");
+
+    if (token) {
+        openServicesModal();
+    } else {
+        openModal("login");
+    }
+});
+function handleClick(){
+  console.log("ksdf")
+}
 </script>
 
 </body>

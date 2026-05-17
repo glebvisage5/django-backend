@@ -1,0 +1,509 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>EduCRM — Дашборд</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <style>
+    :root {
+      --background: 0 0% 100%;
+      --foreground: 222.2 84% 4.9%;
+      --card: 0 0% 100%;
+      --card-foreground: 222.2 84% 4.9%;
+      --popover: 0 0% 100%;
+      --popover-foreground: 222.2 84% 4.9%;
+      --primary: 222.2 47.4% 11.2%;
+      --primary-foreground: 210 40% 98%;
+      --secondary: 210 40% 96.1%;
+      --secondary-foreground: 222.2 47.4% 11.2%;
+      --muted: 210 40% 96.1%;
+      --muted-foreground: 215.4 16.3% 46.9%;
+      --accent: 210 40% 96.1%;
+      --accent-foreground: 222.2 47.4% 11.2%;
+      --destructive: 0 84.2% 60.2%;
+      --destructive-foreground: 210 40% 98%;
+      --border: 214.3 31.8% 91.4%;
+      --input: 214.3 31.8% 91.4%;
+      --ring: 222.2 84% 4.9%;
+      --radius: 0.75rem;
+    }
+
+    * , *::before, *::after {
+      box-sizing: border-box;
+      border-color: hsl(var(--border));
+    }
+
+    body {
+      margin: 0;
+      background-color: hsl(var(--background));
+      color: hsl(var(--foreground));
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
+    }
+
+    .bg-card { background-color: hsl(var(--card)); }
+    .text-muted-foreground { color: hsl(var(--muted-foreground)); }
+    .bg-muted { background-color: hsl(var(--muted)); }
+    .hover\:bg-accent:hover { background-color: hsl(var(--accent)); }
+
+    .card {
+      border-radius: var(--radius);
+      border: 1px solid hsl(var(--border));
+      background-color: hsl(var(--card));
+      box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+    }
+    .card-header {
+      padding: 1rem 1.25rem;
+      border-bottom: 1px solid hsl(var(--border));
+    }
+    .card-content {
+      padding: 1rem 1.25rem;
+    }
+
+    .btn-outline {
+      border: 1px solid hsl(var(--border));
+      padding: 0.5rem 1rem;
+      border-radius: var(--radius);
+      background: transparent;
+      font-size: 0.875rem;
+      transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+    }
+    .btn-outline:hover {
+      background: hsl(var(--accent));
+    }
+
+    .badge-destructive {
+      background: hsl(var(--destructive));
+      color: hsl(var(--destructive-foreground));
+      padding: 0.15rem 0.5rem;
+      border-radius: 999px;
+      font-size: 0.75rem;
+      font-weight: 500;
+    }
+
+    .sidebar-link {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.55rem 0.9rem;
+      border-radius: 0.6rem;
+      font-size: 0.9rem;
+      color: hsl(var(--muted-foreground));
+      cursor: pointer;
+      transition: background 0.15s ease, color 0.15s ease;
+    }
+    .sidebar-link:hover {
+      background-color: hsl(var(--muted));
+      color: hsl(var(--foreground));
+    }
+    .sidebar-link-active {
+      background-color: hsl(var(--muted));
+      color: hsl(var(--foreground));
+      font-weight: 500;
+    }
+  </style>
+</head>
+
+<body class="bg-gray-50">
+<div class="min-h-screen flex">
+  <aside class="w-64 bg-card border-r flex flex-col">
+    <div class="px-5 py-4 border-b">
+      <div class="flex items-center gap-2">
+        <div class="w-8 h-8 rounded-xl bg-indigo-600 flex items-center justify-center text-white font-semibold">
+          E
+        </div>
+        <div>
+          <div class="text-sm font-semibold">EduCRM</div>
+          <div id="panel-title" class="text-xs text-muted-foreground">Панель студента</div>
+        </div>
+      </div>
+      <div class="mt-2 text-xs text-muted-foreground">
+        Режим: <span id="panel-mode">Пользователь</span>
+      </div>
+    </div>
+
+    <nav class="flex-1 px-3 py-4 space-y-1" id="sidebar-menu"></nav>
+
+    <div class="px-3 py-3 border-t">
+      <button class="sidebar-link w-full justify-start" id="logout-btn">
+        <i data-lucide="log-out" class="w-4 h-4"></i>
+        <span>Выйти</span>
+      </button>
+    </div>
+  </aside>
+
+  <!-- MAIN CONTENT -->
+  <main class="flex-1 bg-gray-50">
+    <header class="border-b bg-card">
+      <div class="max-w-[1800px] mx-auto px-4 py-3 flex items-center justify-between">
+        <div>
+          <h1 class="text-lg font-semibold">Дашборд</h1>
+          <p class="text-xs text-muted-foreground">Общий обзор активности и прогресса</p>
+        </div>
+        <div class="flex items-center gap-3 text-sm">
+          <span id="user-name" class="font-medium">Пользователь</span>
+          <span class="px-2 py-1 rounded-full bg-muted text-xs text-muted-foreground" id="user-role-label">
+            Студент
+          </span>
+        </div>
+      </div>
+    </header>
+
+    <!-- DASHBOARD CONTENT -->
+    <section class="space-y-4 md:space-y-6 max-w-[1800px] mx-auto px-4 py-6">
+      <div class="text-center sm:text-left">
+        <h2 class="text-2xl font-semibold">Обзор дашборда</h2>
+        <p class="text-muted-foreground">Отслеживайте прогресс и контролируйте задачи</p>
+      </div>
+
+      <div class="grid gap-4 md:gap-6 lg:grid-cols-3">
+        <div class="lg:col-span-2 space-y-4">
+          <div class="card">
+            <div class="card-header">
+              <h3 class="flex items-center gap-2 text-base sm:text-lg">
+                <i data-lucide="check-circle" class="h-4 w-4 sm:h-5 sm:w-5"></i>
+                Прогресс задач
+              </h3>
+            </div>
+
+            <div class="card-content">
+              <div id="tasks-grid" class="grid gap-3 sm:gap-4 sm:grid-cols-2"></div>
+              <button class="btn-outline w-full mt-4">Все задачи</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Calendar -->
+        <div class="space-y-4">
+          <div class="card">
+            <div class="card-header">
+              <h3 class="flex items-center gap-2 text-base sm:text-lg">
+                <i data-lucide="calendar" class="h-4 w-4 sm:h-5 sm:w-5"></i>
+                Предстоящие события
+              </h3>
+            </div>
+
+            <div class="card-content space-y-3" id="events-list"></div>
+
+            <div class="card-content pt-0">
+              <button class="btn-outline w-full">Полный календарь</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="grid gap-4 md:gap-6 sm:grid-cols-2 lg:grid-cols-3">
+        <div class="card">
+          <div class="card-header">
+            <h3 class="flex items-center gap-2">
+              <i data-lucide="trophy" class="h-5 w-5"></i>
+              Рейтинг
+            </h3>
+          </div>
+
+          <div class="card-content space-y-3" id="leaderboard-list"></div>
+
+          <div class="card-content pt-0">
+            <button class="btn-outline w-full">Полный рейтинг</button>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <h3 class="flex items-center gap-2">
+              <i data-lucide="alert-circle" class="h-5 w-5"></i>
+              Предстоящие дедлайны
+            </h3>
+          </div>
+
+          <div class="card-content space-y-3" id="deadlines-list"></div>
+
+          <div class="card-content pt-0">
+            <button class="btn-outline w-full">Все дедлайны</button>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <h3 class="flex items-center gap-2">
+              <i data-lucide="trending-up" class="h-5 w-5"></i>
+              Академическая успеваемость
+            </h3>
+          </div>
+
+          <div class="card-content space-y-4" id="performance-block"></div>
+
+          <div class="card-content pt-0">
+            <button class="btn-outline w-full">Подробный отчёт</button>
+          </div>
+        </div>
+
+      </div>
+    </section>
+  </main>
+</div>
+
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+  initPage();
+});
+
+async function initPage() {
+  await loadUserInfo();
+  await loadDashboardData();
+  lucide.createIcons();
+}
+
+// ---------- USER / ROLE / MENU ----------
+
+async function loadUserInfo() {
+  const token = localStorage.getItem("token");
+
+  const response = await fetch("/api/auth/me/", {
+    headers: { "Authorization": `Bearer ${token}` }
+  });
+
+  if (!response.ok) {
+    console.error("Не удалось получить данные пользователя");
+    return;
+  }
+
+  const user = await response.json();
+  const isAdmin = !!user.is_admin;
+
+  // Имя и роль
+  document.getElementById("user-name").textContent = user.name || user.email || "Пользователь";
+  document.getElementById("user-role-label").textContent = isAdmin ? "Администратор" : "Студент";
+  document.getElementById("panel-title").textContent = isAdmin ? "Панель администратора" : "Панель студента";
+  document.getElementById("panel-mode").textContent = isAdmin ? "Админ" : "Пользователь";
+
+  renderSidebarMenu(isAdmin);
+}
+
+function renderSidebarMenu(isAdmin) {
+  const menu = document.getElementById("sidebar-menu");
+  menu.innerHTML = "";
+
+  const studentItems = [
+    { icon: "layout-dashboard", label: "Дашборд", href: "./", active: true },
+    { icon: "check-square", label: "Задачи", href: "tasks/"},
+    { icon: "book-open", label: "Курсы" },
+    { icon: "users", label: "Группа" },
+    { icon: "users-2", label: "Команда" },
+    { icon: "folder", label: "Файлы" },
+    { icon: "user", label: "Профиль" },
+    { icon: "settings", label: "Настройки" },
+  ];
+
+  const adminItems = [
+    { icon: "layout-dashboard", label: "Дашборд", active: true },
+    { icon: "users", label: "Пользователи" },
+    { icon: "users-2", label: "Группы" },
+    { icon: "book-open", label: "Курсы" },
+    { icon: "folder", label: "Файлы" },
+    { icon: "settings", label: "Настройки" },
+  ];
+
+  const items = isAdmin ? adminItems : studentItems;
+
+  items.forEach(item => {
+    const link = document.createElement("a");
+    link.href = item.href || "#";
+    link.className = "sidebar-link" + (item.active ? " sidebar-link-active" : "");
+    link.innerHTML = `
+    <i data-lucide="${item.icon}" class="w-4 h-4"></i>
+    <span>${item.label}</span>
+    `;
+    menu.appendChild(link);
+  });
+}
+
+// ---------- DASHBOARD DATA ----------
+
+async function loadDashboardData() {
+  const token = localStorage.getItem("token");
+
+  const response = await fetch("/api/educrm/dashboard/", {
+    headers: { "Authorization": `Bearer ${token}` }
+  });
+
+  if (!response.ok) {
+    console.error("Не удалось получить данные дашборда");
+    return;
+  }
+
+  const data = await response.json();
+
+  renderTasks(data.tasks || []);
+  renderEvents(data.events || []);
+  renderLeaderboard(data.leaderboard || []);
+  renderDeadlines(data.deadlines || []);
+  renderPerformance(data.performance || { overall: 0, courses: [] });
+}
+
+// TASKS
+function renderTasks(tasks) {
+  const grid = document.getElementById("tasks-grid");
+  grid.innerHTML = "";
+
+  tasks.forEach(task => {
+    grid.innerHTML += `
+      <div class="border rounded-xl p-4 hover:bg-muted transition cursor-pointer">
+        <div class="flex justify-between items-start mb-2">
+          <div>
+            <h4 class="font-medium text-sm sm:text-base">${task.title}</h4>
+            <p class="text-xs sm:text-sm text-muted-foreground">${task.course}</p>
+          </div>
+          <span class="px-2 py-1 rounded text-xs ${getStatusColor(task.status)}">
+            ${getStatusLabel(task.status)}
+          </span>
+        </div>
+
+        <div class="space-y-2 mt-1">
+          <div class="flex justify-between text-xs sm:text-sm">
+            <span class="text-muted-foreground">Прогресс</span>
+            <span>${task.progress}%</span>
+          </div>
+
+          <div class="w-full bg-muted rounded-full h-2">
+            <div class="bg-indigo-500 h-2 rounded-full" style="width:${task.progress}%"></div>
+          </div>
+
+          <div class="flex items-center gap-2 text-xs sm:text-sm text-muted-foreground">
+            <i data-lucide="clock" class="w-4 h-4"></i>
+            <span>Срок: ${task.dueDate}</span>
+          </div>
+        </div>
+      </div>
+    `;
+  });
+}
+
+function getStatusLabel(status) {
+  return {
+    "completed": "Завершено",
+    "in-progress": "В процессе",
+    "pending": "Ожидает"
+  }[status] || status;
+}
+
+function getStatusColor(status) {
+  return {
+    "completed": "bg-green-100 text-green-800",
+    "in-progress": "bg-blue-100 text-blue-800",
+    "pending": "bg-yellow-100 text-yellow-800"
+  }[status] || "bg-muted text-muted-foreground";
+}
+
+// EVENTS
+function renderEvents(events) {
+  const list = document.getElementById("events-list");
+  list.innerHTML = "";
+
+  events.forEach(ev => {
+    list.innerHTML += `
+      <div class="p-3 border rounded-lg hover:bg-muted/50 transition-colors">
+        <p class="font-medium text-sm sm:text-base">${ev.title}</p>
+        <div class="flex items-center gap-2 mt-1 text-xs sm:text-sm text-muted-foreground">
+          <i data-lucide="calendar" class="h-3 w-3"></i>
+          <span>${ev.date}</span>
+        </div>
+        <div class="flex items-center gap-2 text-xs sm:text-sm text-muted-foreground">
+          <i data-lucide="clock" class="h-3 w-3"></i>
+          <span>${ev.time}</span>
+        </div>
+      </div>
+    `;
+  });
+}
+
+// LEADERBOARD
+function renderLeaderboard(listData) {
+  const list = document.getElementById("leaderboard-list");
+  list.innerHTML = "";
+
+  listData.forEach(entry => {
+    list.innerHTML += `
+      <div class="flex items-center gap-3 p-2 rounded-lg ${entry.highlight ? "bg-primary/10 border border-primary/20" : ""}">
+        <div class="w-8 h-8 rounded-full flex items-center justify-center text-sm ${getRankColor(entry.rank)}">
+          ${entry.rank}
+        </div>
+        <div class="flex-1 min-w-0">
+          <p class="text-sm truncate">${entry.name}</p>
+          <p class="text-xs text-muted-foreground">${entry.points} баллов</p>
+        </div>
+      </div>
+    `;
+  });
+}
+
+function getRankColor(rank) {
+  return {
+    1: "bg-yellow-500 text-white",
+    2: "bg-gray-400 text-white",
+    3: "bg-orange-600 text-white"
+  }[rank] || "bg-muted text-muted-foreground";
+}
+
+// DEADLINES
+function renderDeadlines(deadlines) {
+  const list = document.getElementById("deadlines-list");
+  list.innerHTML = "";
+
+  deadlines.forEach(dl => {
+    list.innerHTML += `
+      <div class="p-3 border rounded-lg">
+        <div class="flex justify-between items-start gap-2">
+          <div class="flex-1 min-w-0">
+            <p class="text-sm truncate">${dl.task}</p>
+            <p class="text-xs text-muted-foreground">${dl.course}</p>
+          </div>
+          ${dl.urgent ? `<span class="badge-destructive shrink-0">Срочно</span>` : ""}
+        </div>
+        <p class="text-xs text-muted-foreground mt-2">${dl.date}</p>
+      </div>
+    `;
+  });
+}
+
+// PERFORMANCE
+function renderPerformance(perf) {
+  const block = document.getElementById("performance-block");
+
+  block.innerHTML = `
+    <div class="text-center p-4 bg-muted rounded-lg">
+      <div class="text-4xl mb-1">${perf.overall}%</div>
+      <p class="text-sm text-muted-foreground">Общая оценка</p>
+    </div>
+    <div class="space-y-3">
+      ${(perf.courses || []).map(c => `
+        <div class="space-y-1">
+          <div class="flex justify-between text-sm">
+            <span class="truncate">${c.name}</span>
+            <span>${c.grade}%</span>
+          </div>
+          <div class="w-full bg-muted rounded-full h-2">
+            <div class="${c.color} h-2 rounded-full" style="width:${c.grade}%"></div>
+          </div>
+        </div>
+      `).join("")}
+    </div>
+  `;
+}
+
+
+document.getElementById("logout-btn").addEventListener("click", () => {
+  localStorage.removeItem("token");
+  localStorage.removeItem("role");
+  window.location.href = "/";
+});
+document.addEventListener("DOMContentLoaded", () => {
+  const modal = document.getElementById("task-modal");
+  if (modal) modal.classList.add("hidden");
+});
+</script>
+
+</body>
+</html>

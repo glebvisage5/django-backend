@@ -16,9 +16,11 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'rest_framework',
 
     'crm',
-    'accounts'
+    'accounts',
+    'educrm_app'
 ]
 
 MIDDLEWARE = [

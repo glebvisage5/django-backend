@@ -1,0 +1,1014 @@
+<!DOCTYPE html>
+<html lang="ru" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <title>Файлы</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <style>
+    :root {
+      --background: 0 0% 100%;
+      --foreground: 222.2 84% 4.9%;
+      --card: 0 0% 100%;
+      --card-foreground: 222.2 84% 4.9%;
+      --muted: 210 40% 96.1%;
+      --muted-foreground: 215.4 16.3% 46.9%;
+      --border: 214.3 31.8% 91.4%;
+      --radius: 0.75rem;
+    }
+
+    body {
+      background-color: hsl(var(--background));
+      color: hsl(var(--foreground));
+      font-family: system-ui, sans-serif;
+    }
+    .sidebar-link {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.55rem 0.9rem;
+      border-radius: 0.6rem;
+      font-size: 0.9rem;
+      color: hsl(var(--muted-foreground));
+      cursor: pointer;
+      transition: background 0.15s ease, color 0.15s ease;
+    }
+    .sidebar-link:hover {
+      background-color: hsl(var(--muted));
+      color: hsl(var(--foreground));
+    }
+    .sidebar-link-active {
+      background-color: hsl(var(--muted));
+      color: hsl(var(--foreground));
+      font-weight: 500;
+    }
+    .card {
+      border-radius: var(--radius);
+      border: 1px solid hsl(var(--border));
+      background-color: hsl(var(--card));
+      box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+    }
+    .card-header { padding: 1rem 1.25rem; border-bottom: 1px solid hsl(var(--border)); }
+    .card-content { padding: 1rem 1.25rem; }
+
+    .btn-outline {
+      border: 1px solid hsl(var(--border));
+      padding: 0.5rem 1rem;
+      border-radius: var(--radius);
+      background: transparent;
+      transition: background 0.15s ease;
+    }
+    .btn-outline:hover { background: hsl(var(--muted)); }
+
+    .input { @apply w-full px-3 py-2 border rounded-md bg-white border-neutral-300 }
+    .select { @apply px-3 py-2 border rounded-md bg-white border-neutral-300 }
+    .btn { @apply px-4 py-2 rounded-md font-medium; }
+    .btn-ghost { @apply text-neutral-300 hover:bg-neutral-800; }
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.5);
+      z-index: 50;
+      display: none;
+    }
+
+    .modal-backdrop.active {
+      display: block;
+    }
+
+    .modal {
+      position: fixed;
+      inset: 0;
+      z-index: 50;
+      display: none;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .modal.active {
+      display: flex;
+    }
+
+    .modal-panel {
+      max-width: 28rem;
+      width: 100%;
+    }
+  </style>
+</head>
+
+<body class="bg-gray-50">
+
+<div class="min-h-screen flex">
+  <aside class="w-64 bg-card border-r flex flex-col">
+    <div class="px-5 py-4 border-b">
+      <div class="flex items-center gap-2">
+        <div class="w-8 h-8 rounded-xl bg-indigo-600 flex items-center justify-center text-white font-semibold">
+          E
+        </div>
+        <div>
+          <div class="text-sm font-semibold">EduCRM</div>
+          <div id="panel-title" class="text-xs text-muted-foreground">Панель студента</div>
+        </div>
+      </div>
+      <div class="mt-2 text-xs text-muted-foreground">
+        Режим: <span id="panel-mode">Пользователь</span>
+      </div>
+    </div>
+
+    <nav class="flex-1 px-3 py-4 space-y-1" id="sidebar-menu"></nav>
+
+    <div class="px-3 py-3 border-t">
+      <button class="sidebar-link w-full justify-start" id="logout-btn">
+        <i data-lucide="log-out" class="w-4 h-4"></i>
+        <span>Выйти</span>
+      </button>
+    </div>
+  </aside>
+  <main class="flex-1 p-6">
+    <div id="files-root" class="space-y-6 max-w-[1800px] mx-auto">
+
+      <!-- HEADER -->
+      <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div>
+          <h2 class="text-2xl font-semibold">Файловый менеджер</h2>
+          <p class="text-neutral-400">Управление файлами и документами</p>
+        </div>
+
+        <div class="flex gap-2">
+          <button id="btn-open-create-folder" class="btn btn-outline flex items-center gap-2">
+            <i data-lucide="folder-plus" class="w-4 h-4"></i>
+            Новая папка
+          </button>
+
+          <button id="btn-open-upload" class="flex items-center justify-center gap-2 bg-indigo-600 text-white px-4 py-2 rounded-lg w-full sm:w-auto hover:bg-indigo-700 transition">
+            <i data-lucide="upload" class="w-4 h-4"></i>
+            Загрузить файл
+          </button>
+        </div>
+      </div>
+
+      <!-- BREADCRUMB -->
+      <div id="breadcrumb" class="hidden items-center gap-2">
+        <button id="breadcrumb-back" class="btn-ghost flex items-center gap-2 text-sm">
+          <i data-lucide="arrow-left" class="w-4 h-4"></i>
+          Все файлы
+        </button>
+        <span id="breadcrumb-folder-name"></span>
+      </div>
+
+      <!-- STATS -->
+      <div class="grid gap-4 md:grid-cols-4">
+        <div class="card">
+          <div class="card-content flex items-center justify-between">
+            <div>
+              <p class="text-sm text-neutral-400">Всего файлов</p>
+              <div id="stat-total" class="text-2xl font-semibold">0</div>
+            </div>
+            <i data-lucide="file-text" class="w-8 h-8 text-neutral-500"></i>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-content flex items-center justify-between">
+            <div>
+              <p class="text-sm text-neutral-400">Папок</p>
+              <div id="stat-folders" class="text-2xl font-semibold">0</div>
+            </div>
+            <i data-lucide="folder" class="w-8 h-8 text-blue-600"></i>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-content flex items-center justify-between">
+            <div>
+              <p class="text-sm text-neutral-400">Документов</p>
+              <div id="stat-documents" class="text-2xl font-semibold">0</div>
+            </div>
+            <i data-lucide="file-text" class="w-8 h-8 text-green-600"></i>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-content flex items-center justify-between">
+            <div>
+              <p class="text-sm text-neutral-400">Размер</p>
+              <div id="stat-size" class="text-2xl font-semibold">0 MB</div>
+            </div>
+            <i data-lucide="image" class="w-8 h-8 text-purple-600"></i>
+          </div>
+        </div>
+      </div>
+
+      <!-- FILTERS -->
+      <div class="card">
+        <div class="card-content">
+          <div class="flex flex-col sm:flex-row gap-4">
+
+            <div class="relative flex-1">
+              <i data-lucide="search" class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-500"></i>
+              <input id="search-input" class="input pl-9" placeholder="Поиск файлов..." />
+            </div>
+
+            <select id="filter-type" class="select w-full sm:w-[180px]">
+              <option value="all">Все типы</option>
+              <option value="document">Документы</option>
+              <option value="image">Изображения</option>
+              <option value="video">Видео</option>
+              <option value="code">Код</option>
+            </select>
+
+            <select id="filter-category" class="select w-full sm:w-[180px]">
+              <option value="all">Все категории</option>
+            </select>
+
+          </div>
+        </div>
+      </div>
+
+      <!-- FOLDERS -->
+      <div id="folders-section" class="hidden">
+        <h3 class="mb-4 text-lg font-semibold">Папки</h3>
+        <div id="folders-grid" class="grid gap-4 md:grid-cols-4"></div>
+      </div>
+
+      <!-- FILES -->
+      <div>
+        <h3 id="files-title" class="mb-4 text-lg font-semibold">Файлы</h3>
+        <div id="files-grid" class="grid gap-4"></div>
+      </div>
+
+      <!-- EMPTY STATE -->
+      <div id="empty-state" class="hidden">
+        <div class="card">
+          <div class="card-content text-center py-12">
+            <i data-lucide="file-text" class="w-12 h-12 text-neutral-500 mx-auto mb-4"></i>
+            <p class="text-neutral-500 mb-4">Файлы не найдены</p>
+            <button id="btn-empty-upload" class="btn flex items-center justify-center gap-2 mx-auto bg-indigo-600 text-white px-4 py-2 rounded-lg w-full sm:w-auto hover:bg-indigo-700 transition">
+                <i data-lucide="upload" class="w-4 h-4"></i>
+                Загрузить файл
+            </button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </main>
+</div>
+
+<!-- MODALS -->
+<!-- CREATE FOLDER -->
+<!-- Create Folder Modal -->
+<div class="modal" id="modal-create-folder">
+  <div class="modal-backdrop" id="create-folder-backdrop"></div>
+
+  <div class="modal-panel mx-4">
+    <div class="rounded-xl border bg-white p-6 shadow-xl relative z-50">
+      <h3 class="text-lg font-semibold mb-1">Новая папка</h3>
+      <p class="text-sm text-muted-foreground mb-4">
+        Создайте папку для организации файлов
+      </p>
+
+      <div class="space-y-3">
+        <div class="space-y-2">
+          <label class="text-sm font-semibold">Название папки</label>
+          <input
+            id="input-folder-name"
+            type="text"
+            placeholder="Моя папка"
+            class="w-full px-3 py-2 border rounded-xl shadow bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 transition"
+          />
+        </div>
+
+        <div class="flex gap-2 pt-2">
+          <button id="btn-cancel-create-folder"
+            class="w-full border rounded-md py-2 font-semibold hover:bg-neutral-100 transition">
+            Отмена
+          </button>
+
+          <button id="btn-confirm-create-folder"
+            class="w-full text-white rounded-md py-2 font-semibold shadow-lg hover:shadow-xl transition"
+            style="background: linear-gradient(135deg, #a855f7, #4f46e5, #22c55e);">
+            Создать
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- UPLOAD -->
+<!-- Upload Modal -->
+<div class="modal" id="modal-upload">
+  <div class="modal-backdrop" id="upload-backdrop"></div>
+
+  <div class="modal-panel mx-4">
+    <div class="rounded-xl border bg-white p-6 shadow-xl relative z-50">
+      <h3 class="text-lg font-semibold mb-1">Загрузить файл</h3>
+      <p class="text-sm text-muted-foreground mb-4">
+        Добавьте файл в библиотеку
+      </p>
+
+      <div id="upload-dropzone"
+        class="border-2 border-dashed rounded-xl p-8 text-center cursor-pointer hover:bg-neutral-50 transition">
+        <i data-lucide="upload" class="w-12 h-12 text-neutral-400 mx-auto mb-4"></i>
+        <p class="mb-2">Перетащите файл сюда</p>
+        <p class="text-sm text-neutral-500 mb-4">или</p>
+        <button class="border px-4 py-2 rounded-md">Выбрать файл</button>
+      </div>
+
+      <div class="space-y-2 mt-4">
+        <label class="text-sm font-semibold">Категория</label>
+        <select id="upload-category"
+          class="w-full px-3 py-2 border rounded-xl shadow bg-white focus:ring-indigo-500">
+          <option value="Assignments">Assignments</option>
+          <option value="Projects">Projects</option>
+          <option value="Notes">Notes</option>
+          <option value="Lectures">Lectures</option>
+          <option value="Design">Design</option>
+        </select>
+      </div>
+
+      <div class="flex gap-2 pt-4">
+        <button id="btn-cancel-upload"
+          class="w-full border rounded-md py-2 font-semibold hover:bg-neutral-100 transition">
+          Отмена
+        </button>
+
+        <button id="btn-confirm-upload"
+          class="w-full text-white rounded-md py-2 font-semibold shadow-lg hover:shadow-xl transition"
+          style="background: linear-gradient(135deg, #a855f7, #4f46e5, #22c55e);">
+          Загрузить
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MOVE FILE -->
+<!-- Move File Modal -->
+<div class="modal" id="modal-move">
+  <div class="modal-backdrop" id="move-backdrop"></div>
+
+  <div class="modal-panel mx-4">
+    <div class="rounded-xl border bg-white p-6 shadow-xl relative z-50">
+      <h3 class="text-lg font-semibold mb-1">Переместить файл</h3>
+      <p id="move-file-name" class="text-sm text-muted-foreground mb-4"></p>
+
+      <div class="space-y-2">
+        <label class="text-sm font-semibold">Папка назначения</label>
+        <select id="move-folder-select"
+          class="w-full px-3 py-2 border rounded-xl shadow bg-white focus:ring-indigo-500">
+        </select>
+      </div>
+
+      <div class="flex gap-2 pt-4">
+        <button id="btn-cancel-move"
+          class="w-full border rounded-md py-2 font-semibold hover:bg-neutral-100 transition">
+          Отмена
+        </button>
+
+        <button id="btn-confirm-move"
+          class="w-full text-white rounded-md py-2 font-semibold shadow-lg hover:shadow-xl transition"
+          style="background: linear-gradient(135deg, #a855f7, #4f46e5, #22c55e);">
+          Переместить
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- DELETE FILE -->
+<!-- Delete File Modal -->
+<div class="modal" id="modal-delete">
+  <div class="modal-backdrop" id="delete-backdrop"></div>
+
+  <div class="modal-panel mx-4">
+    <div class="rounded-xl border bg-white p-6 shadow-xl relative z-50">
+      <h3 class="text-lg font-semibold mb-1">Удалить файл?</h3>
+      <p id="delete-file-name" class="text-sm text-muted-foreground mb-4"></p>
+
+      <div class="flex gap-2 pt-2">
+        <button id="btn-cancel-delete"
+          class="w-full border rounded-md py-2 font-semibold hover:bg-neutral-100 transition">
+          Отмена
+        </button>
+
+        <button id="btn-confirm-delete"
+          class="w-full text-white rounded-md py-2 font-semibold shadow-lg hover:shadow-xl transition"
+          style="background: linear-gradient(135deg, #ef4444, #dc2626, #b91c1c);">
+          Удалить
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+function renderSidebarMenu(isAdmin) {
+  const menu = document.getElementById("sidebar-menu");
+  menu.innerHTML = "";
+
+  const studentItems = [
+    { icon: "layout-dashboard", label: "Дашборд", href: "/educrm/" },
+    { icon: "check-square", label: "Задачи", href: "/educrm/tasks/" },
+    { icon: "book-open", label: "Курсы" },
+    { icon: "users", label: "Группа" },
+    { icon: "users-2", label: "Команда" },
+    { icon: "folder", label: "Файлы", href: "/educrm/files/", active: true },
+    { icon: "user", label: "Профиль" },
+    { icon: "settings", label: "Настройки" },
+  ];
+
+  const adminItems = [
+    { icon: "layout-dashboard", label: "Дашборд", href: "/" },
+    { icon: "users", label: "Пользователи" },
+    { icon: "users-2", label: "Группы" },
+    { icon: "book-open", label: "Курсы" },
+    { icon: "folder", label: "Файлы", href: "/educrm/files/" },
+    { icon: "settings", label: "Настройки" },
+  ];
+
+  const items = isAdmin ? adminItems : studentItems;
+
+  items.forEach(item => {
+    const div = document.createElement("a");
+    div.href = item.href || "#";
+    div.className = "sidebar-link" + (item.active ? " sidebar-link-active" : "");
+    div.innerHTML = `
+      <i data-lucide="${item.icon}" class="w-4 h-4"></i>
+      <span>${item.label}</span>
+    `;
+    menu.appendChild(div);
+  });
+
+  lucide.createIcons();
+}
+
+// -----------------------------
+// STATE
+// -----------------------------
+let FILES = [];
+let FOLDERS = [];
+
+let currentFolderId = null;
+let searchTerm = "";
+let filterType = "all";
+let filterCategory = "all";
+
+let selectedFileForMove = null;
+let selectedFileForDelete = null;
+let moveToFolderId = "";
+let selectedUploadFile = null;
+
+// -----------------------------
+// HELPERS
+// -----------------------------
+function getFileIcon(type) {
+  const icons = {
+    document: "file-text",
+    image: "image",
+    video: "film",
+    audio: "music",
+    code: "file-code",
+    other: "file"
+  };
+  return `<i data-lucide="${icons[type] || 'file'}" class="w-8 h-8 text-neutral-300"></i>`;
+}
+
+function getFileTypeColor(type) {
+  const colors = {
+    document: "bg-blue-100 text-blue-800",
+    image: "bg-green-100 text-green-800",
+    video: "bg-purple-100 text-purple-800",
+    audio: "bg-pink-100 text-pink-800",
+    code: "bg-orange-100 text-orange-800",
+    other: "bg-gray-100 text-gray-800"
+  };
+  return colors[type] || colors.other;
+}
+
+function updateFolderCounts() {
+  FOLDERS = FOLDERS.map(folder => ({
+    ...folder,
+    files_count: FILES.filter(f => f.folder === folder.id).length
+  }));
+}
+
+function getStats() {
+  return {
+    total: FILES.length,
+    totalSize: FILES.reduce((sum, file) => {
+      const size = parseFloat(file.size);
+      const unit = file.size.includes("MB") ? 1 : 0.001;
+      return sum + size * unit;
+    }, 0),
+    folders: FOLDERS.length,
+    documents: FILES.filter(f => f.type === "document").length,
+  };
+}
+
+// -----------------------------
+// API
+// -----------------------------
+async function loadData() {
+  const token = localStorage.getItem("token");
+
+  const [filesRes, foldersRes] = await Promise.all([
+    fetch("/api/educrm/files/", {
+      headers: { "Authorization": `Bearer ${token}` }
+    }),
+    fetch("/api/educrm/folders/", {
+      headers: { "Authorization": `Bearer ${token}` }
+    })
+  ]);
+
+  FILES = await filesRes.json();
+  FOLDERS = await foldersRes.json();
+
+  renderAll();
+}
+
+async function apiCreateFolder(name) {
+  const token = localStorage.getItem("token");
+
+  const res = await fetch("/api/educrm/folders/create/", {
+    method: "POST",
+    headers: {
+      "Authorization": `Bearer ${token}`,
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({ name })
+  });
+
+  return res.json();
+}
+
+async function apiUploadFile(file, category) {
+  const token = localStorage.getItem("token");
+
+  const form = new FormData();
+  form.append("file", file);
+  form.append("category", category);
+  form.append("folder", currentFolderId || "null");
+
+  const res = await fetch("/api/educrm/files/upload/", {
+    method: "POST",
+    headers: { "Authorization": `Bearer ${token}` },
+    body: form
+  });
+
+  return res.json();
+}
+
+async function apiMoveFile(fileId, folderId) {
+  const token = localStorage.getItem("token");
+
+  await fetch("/api/educrm/files/move/", {
+    method: "POST",
+    headers: {
+      "Authorization": `Bearer ${token}`,
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      file_id: fileId,
+      folder_id: folderId
+    })
+  });
+}
+
+async function apiDeleteFile(fileId) {
+  const token = localStorage.getItem("token");
+
+  await fetch(`/api/educrm/files/delete/${fileId}/`, {
+    method: "DELETE",
+    headers: { "Authorization": `Bearer ${token}` }
+  });
+}
+
+// -----------------------------
+// RENDER FUNCTIONS
+// -----------------------------
+function renderBreadcrumb() {
+  const el = document.getElementById("breadcrumb");
+  const name = document.getElementById("breadcrumb-folder-name");
+
+  if (!currentFolderId) {
+    el.classList.add("hidden");
+    return;
+  }
+
+  const folder = FOLDERS.find(f => f.id === currentFolderId);
+  name.textContent = folder?.name || "";
+  el.classList.remove("hidden");
+}
+
+function renderStats() {
+  const stats = getStats();
+  document.getElementById("stat-total").textContent = stats.total;
+  document.getElementById("stat-folders").textContent = stats.folders;
+  document.getElementById("stat-documents").textContent = stats.documents;
+  document.getElementById("stat-size").textContent = stats.totalSize.toFixed(1) + " MB";
+}
+
+function renderFilters() {
+  const categorySelect = document.getElementById("filter-category");
+  categorySelect.innerHTML = `<option value="all">Все категории</option>`;
+
+  [...new Set(FILES.map(f => f.category))].forEach(cat => {
+    categorySelect.innerHTML += `<option value="${cat}">${cat}</option>`;
+  });
+}
+
+function renderFolders() {
+  const section = document.getElementById("folders-section");
+  const grid = document.getElementById("folders-grid");
+
+  if (currentFolderId || FOLDERS.length === 0) {
+    section.classList.add("hidden");
+    return;
+  }
+
+  section.classList.remove("hidden");
+  grid.innerHTML = "";
+
+  FOLDERS.forEach(folder => {
+    grid.innerHTML += `
+      <div class="card cursor-pointer transition"
+           onclick="openFolder('${folder.id}')">
+        <div class="card-content">
+          <div class="flex items-start justify-between mb-3">
+            <div>
+              <i data-lucide="folder" class="w-12 h-12 text-blue-600 mb-3"></i>
+              <h4 class="truncate">${folder.name}</h4>
+              <p class="text-sm text-neutral-400">${folder.files_count} файлов</p>
+            </div>
+            <button onclick="event.stopPropagation(); openDeleteFolder('${folder.id}')"
+                    class="btn-ghost">
+              <i data-lucide="trash-2" class="w-4 h-4 text-red-600"></i>
+            </button>
+          </div>
+          <p class="text-xs text-neutral-500">Создана ${folder.created_at}</p>
+        </div>
+      </div>
+    `;
+  });
+
+  lucide.createIcons();
+}
+
+function renderFiles() {
+  const grid = document.getElementById("files-grid");
+  const empty = document.getElementById("empty-state");
+
+  let displayed = currentFolderId
+    ? FILES.filter(f => f.folder === currentFolderId)
+    : FILES.filter(f => f.folder === null);
+
+  displayed = displayed.filter(file => {
+    const matchesSearch = file.name.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesType = filterType === "all" || file.type === filterType;
+    const matchesCategory = filterCategory === "all" || file.category === filterCategory;
+    return matchesSearch && matchesType && matchesCategory;
+  });
+
+  if (displayed.length === 0) {
+    empty.classList.remove("hidden");
+    grid.innerHTML = "";
+    return;
+  }
+
+  empty.classList.add("hidden");
+  grid.innerHTML = "";
+
+  displayed.forEach(file => {
+    grid.innerHTML += `
+      <div class="card">
+        <div class="card-content flex items-center gap-4">
+          <div>${getFileIcon(file.type)}</div>
+
+          <div class="flex-1 min-w-0">
+            <div class="flex items-center gap-2 mb-1">
+              <h4 class="truncate">${file.name}</h4>
+              <span class="px-2 py-1 rounded text-xs ${getFileTypeColor(file.type)}">${file.type}</span>
+            </div>
+
+            <div class="flex flex-wrap gap-4 text-sm text-neutral-400">
+              <span>${file.size}</span>
+              <span>•</span>
+              <span>Загрузил ${file.uploaded_by}</span>
+              <span>•</span>
+              <span>${file.uploaded_at}</span>
+              <span>•</span>
+              <span class="px-2 py-1 border rounded">${file.category}</span>
+            </div>
+          </div>
+
+          <div class="flex gap-2">
+            <button class="btn-outline p-2">
+              <i data-lucide="download" class="w-4 h-4"></i>
+            </button>
+
+            <button class="btn-outline p-2" onclick="openMoveFile('${file.id}')">
+              <i data-lucide="folder" class="w-4 h-4"></i>
+            </button>
+
+            <button class="btn-outline p-2" onclick="openDeleteFile('${file.id}')">
+              <i data-lucide="trash-2" class="w-4 h-4 text-red-600"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+    `;
+  });
+
+  lucide.createIcons();
+}
+
+// -----------------------------
+// ACTIONS
+// -----------------------------
+function openFolder(id) {
+  currentFolderId = id;
+  renderAll();
+}
+
+function openDeleteFolder(id) {
+  if (!confirm("Удалить папку? Файлы будут перемещены в корень.")) return;
+
+  FILES = FILES.map(f => f.folder === id ? { ...f, folder: null } : f);
+  FOLDERS = FOLDERS.filter(f => f.id !== id);
+  currentFolderId = null;
+
+  renderAll();
+}
+
+function openMoveFile(id) {
+  selectedFileForMove = FILES.find(f => f.id === id);
+  moveToFolderId = "";
+
+  document.getElementById("move-file-name").textContent =
+    "Файл: " + selectedFileForMove.name;
+
+  const select = document.getElementById("move-folder-select");
+  select.innerHTML = `<option value="root">Корень (без папки)</option>`;
+
+  FOLDERS.forEach(f => {
+    select.innerHTML += `<option value="${f.id}">${f.name}</option>`;
+  });
+
+  document.getElementById("modal-move").classList.remove("hidden");
+}
+
+function openDeleteFile(id) {
+  selectedFileForDelete = FILES.find(f => f.id === id);
+  document.getElementById("delete-file-name").textContent =
+    "Удалить: " + selectedFileForDelete.name;
+
+  document.getElementById("modal-delete").classList.remove("hidden");
+}
+
+// -----------------------------
+// UNIVERSAL MODAL SYSTEM
+// -----------------------------
+function openModal(id) {
+  const modal = document.getElementById(id);
+  const backdrop = modal.querySelector(".modal-backdrop");
+
+  modal.classList.add("active");
+  backdrop.classList.add("active");
+
+  document.body.style.overflow = "hidden"; // блокируем скролл
+}
+
+function closeModal(id) {
+  const modal = document.getElementById(id);
+  const backdrop = modal.querySelector(".modal-backdrop");
+
+  modal.classList.remove("active");
+  backdrop.classList.remove("active");
+
+  document.body.style.overflow = "";
+}
+
+document.querySelectorAll(".modal").forEach(modal => {
+  const backdrop = modal.querySelector(".modal-backdrop");
+  backdrop.addEventListener("click", () => closeModal(modal.id));
+});
+
+
+// -----------------------------
+// EVENT LISTENERS
+// -----------------------------
+document.getElementById("search-input").addEventListener("input", e => {
+  searchTerm = e.target.value;
+  renderAll();
+});
+
+document.getElementById("filter-type").addEventListener("change", e => {
+  filterType = e.target.value;
+  renderAll();
+});
+
+document.getElementById("filter-category").addEventListener("change", e => {
+  filterCategory = e.target.value;
+  renderAll();
+});
+
+document.getElementById("breadcrumb-back").addEventListener("click", () => {
+  currentFolderId = null;
+  renderAll();
+});
+
+// Create folder modal
+document.getElementById("btn-open-create-folder").onclick = () =>
+  openModal("modal-create-folder");
+
+document.getElementById("btn-cancel-create-folder").onclick = () =>
+  closeModal("modal-create-folder");
+
+document.getElementById("btn-confirm-create-folder").onclick = async () => {
+  const input = document.getElementById("input-folder-name");
+  const name = input.value.trim();
+
+  if (!name) {
+    input.classList.add("ring-2", "ring-red-500");
+    setTimeout(() => input.classList.remove("ring-2", "ring-red-500"), 800);
+    return;
+  }
+  await apiCreateFolder(name);
+  closeModal("modal-create-folder");
+  input.value = "";
+  loadData();
+};
+
+
+// Upload modal
+document.getElementById("btn-open-upload").onclick = () =>
+  openModal("modal-upload");
+
+document.getElementById("btn-cancel-upload").onclick = () =>
+  closeModal("modal-upload");
+
+document.getElementById("btn-empty-upload").onclick = () =>
+  openModal("modal-upload");
+
+// Move modal
+function openMoveFile(id) {
+  selectedFileForMove = FILES.find(f => f.id === id);
+  document.getElementById("move-file-name").textContent =
+    "Файл: " + selectedFileForMove.name;
+
+  const select = document.getElementById("move-folder-select");
+  select.innerHTML = `<option value="root">Корень (без папки)</option>`;
+  FOLDERS.forEach(f => {
+    select.innerHTML += `<option value="${f.id}">${f.name}</option>`;
+  });
+
+  openModal("modal-move");
+}
+
+document.getElementById("btn-cancel-move").onclick = () =>
+  closeModal("modal-move");
+
+document.getElementById("btn-confirm-move").addEventListener("click", async () => {
+  if (!selectedFileForMove) return;
+
+  await apiMoveFile(selectedFileForMove.id, moveToFolderId);
+  document.getElementById("modal-move").classList.add("hidden");
+  loadData();
+});
+
+// Delete modal
+function openDeleteFile(id) {
+  selectedFileForDelete = FILES.find(f => f.id === id);
+  document.getElementById("delete-file-name").textContent =
+    "Удалить: " + selectedFileForDelete.name;
+
+  openModal("modal-delete");
+}
+
+document.getElementById("btn-cancel-delete").onclick = () =>
+  closeModal("modal-delete");
+
+document.getElementById("btn-confirm-delete").addEventListener("click", async () => {
+  if (!selectedFileForDelete) return;
+
+  await apiDeleteFile(selectedFileForDelete.id);
+  document.getElementById("modal-delete").classList.add("hidden");
+  loadData();
+});
+
+// -----------------------------
+// MAIN RENDER
+// -----------------------------
+function renderAll() {
+  renderSidebarMenu(false); // student mode
+  renderBreadcrumb();
+  renderStats();
+  renderFilters();
+  renderFolders();
+  renderFiles();
+}
+
+loadData();
+</script>
+
+<script>
+lucide.createIcons();
+</script>
+<script>
+let dropZone = null;
+
+function initUploadZone() {
+  dropZone = document.querySelector("#modal-upload .border-dashed");
+
+  dropZone.addEventListener("dragover", (e) => {
+    e.preventDefault();
+    dropZone.classList.add("bg-neutral-800/30");
+  });
+
+  dropZone.addEventListener("dragleave", () => {
+    dropZone.classList.remove("bg-neutral-800/30");
+  });
+
+  dropZone.addEventListener("drop", (e) => {
+    e.preventDefault();
+    dropZone.classList.remove("bg-neutral-800/30");
+
+    if (e.dataTransfer.files.length > 0) {
+      selectedUploadFile = e.dataTransfer.files[0];
+      showSelectedUploadFile();
+    }
+  });
+
+  // "Browse Files" button
+  const browseBtn = dropZone.querySelector("button");
+  browseBtn.addEventListener("click", () => {
+    const input = document.createElement("input");
+    input.type = "file";
+    input.onchange = (e) => {
+      selectedUploadFile = e.target.files[0];
+      showSelectedUploadFile();
+    };
+    input.click();
+  });
+}
+
+function showSelectedUploadFile() {
+  dropZone.innerHTML = `
+    <div class="text-center">
+      <i data-lucide="file" class="w-10 h-10 text-neutral-400 mx-auto mb-3"></i>
+      <p class="text-neutral-300 mb-2">${selectedUploadFile.name}</p>
+      <p class="text-neutral-500 text-sm">${(selectedUploadFile.size / 1024 / 1024).toFixed(2)} MB</p>
+    </div>
+  `;
+  lucide.createIcons();
+}
+
+document.getElementById("btn-confirm-upload").addEventListener("click", async () => {
+  if (!selectedUploadFile) return;
+
+  const category = document.getElementById("upload-category").value;
+
+  await apiUploadFile(selectedUploadFile, category);
+
+  selectedUploadFile = null;
+  document.getElementById("modal-upload").classList.add("hidden");
+  loadData();
+});
+
+// -----------------------------
+// ROLE DETECTION (simple)
+// -----------------------------
+function detectUserRole() {
+  // Если нужно — можно заменить на реальный API
+  const token = localStorage.getItem("token");
+  if (!token) return false;
+
+  // Пример: если email содержит "admin" → админ
+  const payload = JSON.parse(atob(token.split(".")[1]));
+  return payload.email?.includes("admin");
+}
+function highlightActiveSidebar() {
+  const links = document.querySelectorAll("#sidebar-menu a");
+  links.forEach(link => {
+    if (link.href.endsWith("/educrm/files/")) {
+      link.classList.add("sidebar-link-active");
+    }
+  });
+}
+
+// -----------------------------
+// FINAL INIT
+// -----------------------------
+document.addEventListener("DOMContentLoaded", () => {
+  const isAdmin = detectUserRole();
+  renderSidebarMenu(isAdmin);
+  highlightActiveSidebar();
+  initUploadZone();
+  lucide.createIcons();
+});
+</script>
+</body>
+</html>

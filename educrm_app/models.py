@@ -1,5 +1,6 @@
 from django.db import models
 from django.contrib.auth import get_user_model
+from django.contrib.auth.models import User
 
 User = get_user_model()
 
@@ -37,3 +38,26 @@ class TaskComment(models.Model):
 
     def __str__(self):
         return f"Комментарий к {self.task.title}"
+
+class Folder(models.Model):
+    name = models.CharField(max_length=255)
+    created_at = models.DateTimeField(auto_now_add=True)
+    owner = models.ForeignKey(User, on_delete=models.CASCADE)
+
+    def __str__(self):
+        return self.name
+
+
+class File(models.Model):
+    name = models.CharField(max_length=255)
+    file = models.FileField(upload_to="uploads/")
+    size = models.CharField(max_length=50)
+    type = models.CharField(max_length=50)
+    category = models.CharField(max_length=255)
+    uploaded_by = models.ForeignKey(User, on_delete=models.CASCADE)
+    uploaded_at = models.DateTimeField(auto_now_add=True)
+
+    folder = models.ForeignKey(Folder, null=True, blank=True, on_delete=models.SET_NULL)
+
+    def __str__(self):
+        return self.name

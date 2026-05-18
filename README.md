@@ -4,6 +4,7 @@
 <div align="center>
 <img src="https://readme-typing-svg.herokuapp.com?color=00FF4C&size=22&center=true&vCenter=true&width=650&lines=Full‑Stack+разработчик+%7C+UI%2FUX‑ориентированный+инженер;Создатель+студенческой+экосистемы;Чистая+архитектура+%7C+TypeScript+%7C+Node.js;Проектирование+долговечных+цифровых+платформ;РТУ+МИРЭА+%E2%80%94+Инженерия+будущего" />
 </div>
+
 ---
 
 ## Описание проекта

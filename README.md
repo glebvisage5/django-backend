@@ -2,7 +2,7 @@
 ### Курсовая работа (RTU MIREA) • Full‑Stack Architecture • Django + JS
 
 <div align="center">
-<img src="https://readme-typing-svg.herokuapp.com?color=00FF4C&size=22&center=true&vCenter=true&width=650&lines=Full‑Stack+разработчик+%7C+UI%2FUX‑ориентированный+инженер;Создатель+студенческой+экосистемы;Чистая+архитектура+%7C+TypeScript+%7C+Node.js;Проектирование+долговечных+цифровых+платформ;РТУ+МИРЭА+%E2%80%94+Инженерия+будущего" />
+<img src="https://readme-typing-svg.herokuapp.com?color=00FF4C&size=22&center=true&vCenter=true&width=650&lines=EduCRM+—+модульная+образовательная+платформа;Файловый+менеджер+%7C+Задачи+%7C+Профиль;Чистая+архитектура+и+кастомный+JWT;Система+для+студентов+и+преподавателей;Создано+в+рамках+курсовой+работы+RTU+MIREA" />
 </div>
 
 ---

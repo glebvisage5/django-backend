@@ -262,7 +262,9 @@ async function loadUserInfo() {
   const token = localStorage.getItem("token");
 
   const response = await fetch("/api/auth/me/", {
-    headers: { "Authorization": `Bearer ${token}` }
+    headers: {
+      "Authorization": `Bearer ${token}`
+    }
   });
 
   if (!response.ok) {
@@ -273,7 +275,6 @@ async function loadUserInfo() {
   const user = await response.json();
   const isAdmin = !!user.is_admin;
 
-  // Имя и роль
   document.getElementById("user-name").textContent = user.name || user.email || "Пользователь";
   document.getElementById("user-role-label").textContent = isAdmin ? "Администратор" : "Студент";
   document.getElementById("panel-title").textContent = isAdmin ? "Панель администратора" : "Панель студента";
@@ -503,7 +504,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const modal = document.getElementById("task-modal");
   if (modal) modal.classList.add("hidden");
 });
-</script>
 
+</script>
 </body>
 </html>

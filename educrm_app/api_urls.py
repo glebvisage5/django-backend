@@ -8,4 +8,6 @@ urlpatterns = [
     path("tasks/<int:pk>/complete/", api_views.task_mark_complete),
     path("tasks/<int:pk>/comment/", api_views.task_add_comment),
     path("tasks/<int:pk>/upload/", api_views.task_upload_file),
+
+    path("dashboard/", api_views.dashboard),
 ]

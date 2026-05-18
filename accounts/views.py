@@ -1,6 +1,6 @@
 from django.contrib.auth.models import User
 from django.contrib.auth.hashers import make_password
-from django.contrib.auth import authenticate
+from django.contrib.auth import authenticate, login
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from crm.models import Student
@@ -59,6 +59,8 @@ def login_view(request):
 
     if user is None:
         return JsonResponse({"error": "Неверный email или пароль"}, status=401)
+    
+    login(request, user)
 
     token = create_jwt(user.id)
 

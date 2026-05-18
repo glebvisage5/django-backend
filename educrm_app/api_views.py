@@ -74,3 +74,14 @@ def task_upload_file(request, pk):
     task.save()
 
     return Response({"filename": file.name})
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def dashboard(request):
+    return Response({
+        "tasks": TaskSerializer(Task.objects.all(), many=True).data,
+        "events": [],
+        "leaderboard": [],
+        "deadlines": [],
+        "performance": {"overall": 0, "courses": []}
+    })
